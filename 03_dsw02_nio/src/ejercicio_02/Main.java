@@ -37,6 +37,7 @@ public class Main {
 
     static void escribirArchivo( List<Persona> personas, Path archivo, String sep){
         try(BufferedWriter bw = Files.newBufferedWriter(archivo, StandardCharsets.UTF_8)){
+            //cabecera de los registros
             bw.write("id" + sep + "dni" + sep + "nombres" + sep + "apellidos" + sep + "direccion");
             bw.newLine();
             for(Persona per: personas){

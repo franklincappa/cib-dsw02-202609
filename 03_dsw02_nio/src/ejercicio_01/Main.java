@@ -8,8 +8,8 @@ import java.nio.file.Paths;
 public class Main {
     public static void main(String[] args){
         try {
-            Path carpeta= Paths.get("data");
-            //Path carpeta= Paths.get("C:\\temp\\cibertec\\files");
+            //Path carpeta= Paths.get("data");
+            Path carpeta= Paths.get("C:\\temp\\cibertec\\files");
             Files.createDirectories(carpeta);
 
             Path archivoTxt = carpeta.resolve("salida.txt");
@@ -22,6 +22,8 @@ public class Main {
             System.out.println("Carpeta: " + carpeta.toAbsolutePath());
             System.out.println("Paths Txt: " + archivoTxt.toAbsolutePath());
             System.out.println("Paths Csv: " + archivoCsv.toAbsolutePath());
+
+
 
         } catch (Exception e) {
             e.printStackTrace();
