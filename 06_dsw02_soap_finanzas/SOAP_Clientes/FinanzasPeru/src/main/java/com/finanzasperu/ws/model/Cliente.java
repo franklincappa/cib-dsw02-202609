@@ -72,4 +72,6 @@ public class Cliente {
         if (fechaRegistro == null) fechaRegistro = LocalDateTime.now();
         if (estado == null) estado = "ACTIVO";
     }
+
+
 }
