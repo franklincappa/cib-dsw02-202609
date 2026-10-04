@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<bindings version="3.0" xmlns="https://jakarta.ee/xml/ns/jaxb">
+  <!--
+
+Este archivo ha sido generado por Eclipse Implementation of JAXB v3.0.0 
+Visite https://eclipse-ee4j.github.io/jaxb-ri 
+Todas las modificaciones realizadas en este archivo se perderán si se vuelve a compilar el esquema de origen. 
+Generado el: 2026.10.03 a las 06:20:17 PM PET 
+
+  -->
+  <bindings scd="x-schema::tns" xmlns:tns="http://ejemplo.com/productos/ws">
+    <schemaBindings map="false">
+      <package name="com.ejemplo.soapproductos.ws"/>
+    </schemaBindings>
+    <bindings scd="tns:listarProductosRequest">
+      <class ref="com.ejemplo.soapproductos.ws.ListarProductosRequest"/>
+    </bindings>
+    <bindings scd="tns:listarProductosResponse">
+      <class ref="com.ejemplo.soapproductos.ws.ListarProductosResponse"/>
+    </bindings>
+    <bindings scd="~tns:productoDto">
+      <class ref="com.ejemplo.soapproductos.ws.ProductoDto"/>
+    </bindings>
+    <bindings scd="tns:obtenerProductoRequest">
+      <class ref="com.ejemplo.soapproductos.ws.ObtenerProductoRequest"/>
+    </bindings>
+    <bindings scd="tns:obtenerProductoResponse">
+      <class ref="com.ejemplo.soapproductos.ws.ObtenerProductoResponse"/>
+    </bindings>
+    <bindings scd="tns:listarCategoriasRequest">
+      <class ref="com.ejemplo.soapproductos.ws.ListarCategoriasRequest"/>
+    </bindings>
+    <bindings scd="tns:listarCategoriasResponse">
+      <class ref="com.ejemplo.soapproductos.ws.ListarCategoriasResponse"/>
+    </bindings>
+    <bindings scd="~tns:categoriaDto">
+      <class ref="com.ejemplo.soapproductos.ws.CategoriaDto"/>
+    </bindings>
+    <bindings scd="tns:registrarProductoRequest">
+      <class ref="com.ejemplo.soapproductos.ws.RegistrarProductoRequest"/>
+    </bindings>
+    <bindings scd="tns:registrarProductoResponse">
+      <class ref="com.ejemplo.soapproductos.ws.RegistrarProductoResponse"/>
+    </bindings>
+  </bindings>
+</bindings>
+

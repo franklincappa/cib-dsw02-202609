@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Cliente SOAP - Productos</title>
+<style>
+  :root { --borde:#d6dae1; --tinta:#1c2530; --suave:#5d6978; --acento:#0b5cad; --fondo:#f5f6f8; --error:#b3261e; }
+  * { box-sizing: border-box; }
+  body { margin:0; font-family: "Segoe UI", system-ui, sans-serif; color:var(--tinta); background:var(--fondo); }
+  header { background:#fff; border-bottom:1px solid var(--borde); padding:16px 24px; }
+  header h1 { margin:0; font-size:20px; }
+  header p { margin:4px 0 0; color:var(--suave); font-size:13px; }
+  header a { color:var(--acento); }
+  main { max-width:1100px; margin:0 auto; padding:24px; display:grid; gap:20px; grid-template-columns: 2fr 1fr; }
+  section { background:#fff; border:1px solid var(--borde); border-radius:6px; padding:16px; }
+  section h2 { margin:0 0 12px; font-size:15px; }
+  .ancho { grid-column: 1 / -1; }
+  .barra { display:flex; gap:8px; align-items:center; margin-bottom:12px; flex-wrap:wrap; }
+  label { font-size:13px; color:var(--suave); display:block; margin-bottom:4px; }
+  input, select { width:100%; padding:7px 9px; border:1px solid var(--borde); border-radius:4px; font:inherit; }
+  .barra select, .barra input { width:auto; }
+  .campo { margin-bottom:10px; }
+  button { padding:7px 14px; border:1px solid var(--acento); background:var(--acento); color:#fff; border-radius:4px; font:inherit; cursor:pointer; }
+  button.sec { background:#fff; color:var(--acento); }
+  .tabla { overflow-x:auto; }
+  table { width:100%; border-collapse:collapse; font-size:14px; }
+  th, td { text-align:left; padding:8px 10px; border-bottom:1px solid var(--borde); }
+  th { font-size:12px; text-transform:uppercase; letter-spacing:.04em; color:var(--suave); }
+  td.num { text-align:right; font-variant-numeric: tabular-nums; }
+  #mensaje { font-size:13px; min-height:18px; margin-top:8px; }
+  #mensaje.error { color:var(--error); }
+  #mensaje.ok { color:#1a7f37; }
+  .xml { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+  pre { margin:0; background:#10161d; color:#d7e0ea; padding:12px; border-radius:4px; font-size:12px; overflow:auto; max-height:280px; white-space:pre-wrap; word-break:break-word; }
+  .xml h3 { margin:0 0 6px; font-size:12px; color:var(--suave); font-weight:600; }
+  @media (max-width: 800px) { main { grid-template-columns:1fr; } .xml { grid-template-columns:1fr; } }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Cliente SOAP &mdash; Productos y Categor&iacute;as</h1>
+  <p>P&aacute;gina est&aacute;tica que consume el servicio en <code>/ws</code> &middot;
+     <a href="/ws/productos.wsdl" target="_blank">ver WSDL</a></p>
+</header>
+
+<main>
+  <section>
+    <h2>Productos</h2>
+    <div class="barra">
+      <select id="filtroCategoria"><option value="">Todas las categor&iacute;as</option></select>
+      <button id="btnListar">Listar</button>
+      <input id="buscarId" type="number" min="1" placeholder="Id" style="width:90px">
+      <button id="btnBuscar" class="sec">Buscar por id</button>
+    </div>
+    <div class="tabla">
+      <table>
+        <thead>
+          <tr><th>Id</th><th>Producto</th><th>Categor&iacute;a</th><th style="text-align:right">Precio</th><th style="text-align:right">Stock</th></tr>
+        </thead>
+        <tbody id="tbody"></tbody>
+      </table>
+    </div>
+    <div id="mensaje"></div>
+  </section>
+
+  <section>
+    <h2>Registrar producto</h2>
+    <div class="campo"><label for="nombre">Nombre</label><input id="nombre" maxlength="150"></div>
+    <div class="campo"><label for="precio">Precio</label><input id="precio" type="number" min="0" step="0.01"></div>
+    <div class="campo"><label for="stock">Stock</label><input id="stock" type="number" min="0" step="1"></div>
+    <div class="campo"><label for="categoria">Categor&iacute;a</label><select id="categoria"></select></div>
+    <button id="btnRegistrar">Registrar</button>
+  </section>
+
+  <section class="ancho">
+    <h2>&Uacute;ltimo intercambio SOAP</h2>
+    <div class="xml">
+      <div><h3>Request</h3><pre id="xmlRequest"></pre></div>
+      <div><h3>Response</h3><pre id="xmlResponse"></pre></div>
+    </div>
+  </section>
+</main>
+
+<script>
+  // Mismo origen que el servicio: no hace falta CORS.
+  const ENDPOINT = '/ws';
+  const NS = 'http://ejemplo.com/productos/ws';   // targetNamespace del XSD
+
+  const $ = id => document.getElementById(id);
+
+  // ---------- Utilidades SOAP ----------
+
+  function escaparXml(texto) {
+    return String(texto)
+      .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;').replace(/'/g, '&apos;');
+  }
+
+  function armarEnvelope(cuerpo) {
+    return '<?xml version="1.0" encoding="UTF-8"?>\n' +
+      '<soapenv:Envelope xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/" xmlns:ws="' + NS + '">\n' +
+      '  <soapenv:Header/>\n' +
+      '  <soapenv:Body>\n' + cuerpo + '\n  </soapenv:Body>\n' +
+      '</soapenv:Envelope>';
+  }
+
+  /** Envia el request SOAP y devuelve el Document XML de la respuesta. */
+  async function llamarSoap(cuerpo) {
+    const envelope = armarEnvelope(cuerpo);
+    $('xmlRequest').textContent = envelope;
+    $('xmlResponse').textContent = '';
+
+    const respuesta = await fetch(ENDPOINT, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/xml; charset=utf-8' },   // SOAP 1.1
+      body: envelope
+    });
+    const texto = await respuesta.text();
+    $('xmlResponse').textContent = texto;
+
+    const doc = new DOMParser().parseFromString(texto, 'text/xml');
+
+    // Un SOAP Fault llega con HTTP 500 y el elemento <faultstring>
+    const fault = doc.getElementsByTagName('faultstring')[0];
+    if (fault) throw new Error(fault.textContent);
+    if (!respuesta.ok) throw new Error('HTTP ' + respuesta.status);
+    return doc;
+  }
+
+  /** Texto de un hijo DIRECTO (producto y categoria tienen ambos "id" y "nombre"). */
+  function hijo(elemento, nombre) {
+    return Array.from(elemento.children).find(e => e.localName === nombre) || null;
+  }
+  function texto(elemento, nombre) {
+    const e = hijo(elemento, nombre);
+    return e ? e.textContent : '';
+  }
+
+  function leerProducto(el) {
+    const cat = hijo(el, 'categoria');
+    return {
+      id: Number(texto(el, 'id')),
+      nombre: texto(el, 'nombre'),
+      precio: Number(texto(el, 'precio')),
+      stock: Number(texto(el, 'stock')),
+      categoria: { id: Number(texto(cat, 'id')), nombre: texto(cat, 'nombre') }
+    };
+  }
+
+  // ---------- Operaciones del servicio ----------
+
+  async function listarCategorias() {
+    const doc = await llamarSoap('    <ws:listarCategoriasRequest/>');
+    return Array.from(doc.getElementsByTagNameNS(NS, 'categoria'))
+      .map(el => ({ id: Number(texto(el, 'id')), nombre: texto(el, 'nombre') }));
+  }
+
+  async function listarProductos(categoriaId) {
+    const filtro = categoriaId ? '\n      <ws:categoriaId>' + Number(categoriaId) + '</ws:categoriaId>\n    ' : '';
+    const doc = await llamarSoap('    <ws:listarProductosRequest>' + filtro + '</ws:listarProductosRequest>');
+    return Array.from(doc.getElementsByTagNameNS(NS, 'producto')).map(leerProducto);
+  }
+
+  async function obtenerProducto(id) {
+    const doc = await llamarSoap(
+      '    <ws:obtenerProductoRequest>\n' +
+      '      <ws:id>' + Number(id) + '</ws:id>\n' +
+      '    </ws:obtenerProductoRequest>');
+    return leerProducto(doc.getElementsByTagNameNS(NS, 'producto')[0]);
+  }
+
+  async function registrarProducto(p) {
+    // El orden de los elementos debe respetar el xs:sequence del XSD
+    const doc = await llamarSoap(
+      '    <ws:registrarProductoRequest>\n' +
+      '      <ws:nombre>' + escaparXml(p.nombre) + '</ws:nombre>\n' +
+      '      <ws:precio>' + Number(p.precio) + '</ws:precio>\n' +
+      '      <ws:stock>' + Number(p.stock) + '</ws:stock>\n' +
+      '      <ws:categoriaId>' + Number(p.categoriaId) + '</ws:categoriaId>\n' +
+      '    </ws:registrarProductoRequest>');
+    return leerProducto(doc.getElementsByTagNameNS(NS, 'producto')[0]);
+  }
+
+  // ---------- Interfaz ----------
+
+  function mostrarMensaje(msg, tipo) {
+    $('mensaje').textContent = msg || '';
+    $('mensaje').className = tipo || '';
+  }
+
+  function pintarTabla(productos) {
+    const tbody = $('tbody');
+    tbody.replaceChildren();
+    for (const p of productos) {
+      const tr = document.createElement('tr');
+      const celdas = [p.id, p.nombre, p.categoria.nombre, p.precio.toFixed(2), p.stock];
+      celdas.forEach((valor, i) => {
+        const td = document.createElement('td');
+        td.textContent = valor;                 // textContent: sin riesgo de inyeccion HTML
+        if (i >= 3) td.className = 'num';
+        tr.appendChild(td);
+      });
+      tbody.appendChild(tr);
+    }
+    mostrarMensaje(productos.length + ' producto(s)', '');
+  }
+
+  async function ejecutar(accion) {
+    try { await accion(); }
+    catch (e) { mostrarMensaje('Error: ' + e.message, 'error'); }
+  }
+
+  const cargarTabla = () => ejecutar(async () => pintarTabla(await listarProductos($('filtroCategoria').value)));
+
+  $('btnListar').addEventListener('click', cargarTabla);
+  $('filtroCategoria').addEventListener('change', cargarTabla);
+
+  $('btnBuscar').addEventListener('click', () => ejecutar(async () => {
+    const id = $('buscarId').value;
+    if (!id) return mostrarMensaje('Ingrese un id', 'error');
+    pintarTabla([await obtenerProducto(id)]);
+  }));
+
+  $('btnRegistrar').addEventListener('click', () => ejecutar(async () => {
+    const nuevo = {
+      nombre: $('nombre').value.trim(),
+      precio: $('precio').value,
+      stock: $('stock').value,
+      categoriaId: $('categoria').value
+    };
+    if (!nuevo.nombre || nuevo.precio === '' || nuevo.stock === '' || !nuevo.categoriaId) {
+      return mostrarMensaje('Complete todos los campos', 'error');
+    }
+    const creado = await registrarProducto(nuevo);
+    $('nombre').value = $('precio').value = $('stock').value = '';
+    pintarTabla(await listarProductos($('filtroCategoria').value));
+    mostrarMensaje('Producto registrado con id ' + creado.id, 'ok');
+  }));
+
+  // Carga inicial: categorias (combos) y luego productos
+  ejecutar(async () => {
+    const categorias = await listarCategorias();
+    for (const c of categorias) {
+      $('filtroCategoria').add(new Option(c.nombre, c.id));
+      $('categoria').add(new Option(c.nombre, c.id));
+    }
+    pintarTabla(await listarProductos());
+  });
+</script>
+</body>
+</html>
