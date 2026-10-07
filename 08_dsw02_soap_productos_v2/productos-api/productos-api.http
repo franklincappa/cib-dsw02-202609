@@ -1,0 +1,38 @@
+@api = http://localhost:5080
+
+### Categorias
+GET {{api}}/api/categorias
+
+### Productos (todos)
+GET {{api}}/api/productos
+
+### Productos de una categoria
+GET {{api}}/api/productos?categoriaId=1
+
+### Producto por id
+GET {{api}}/api/productos/1
+
+### Producto inexistente (404)
+GET {{api}}/api/productos/9999
+
+### Registrar producto
+POST {{api}}/api/productos
+Content-Type: application/json
+
+{
+  "nombre": "Webcam Logitech C920",
+  "precio": 289.90,
+  "stock": 20,
+  "categoriaId": 2
+}
+
+### Registrar con datos invalidos (400)
+POST {{api}}/api/productos
+Content-Type: application/json
+
+{
+  "nombre": "",
+  "precio": -5,
+  "stock": 1,
+  "categoriaId": 999
+}
