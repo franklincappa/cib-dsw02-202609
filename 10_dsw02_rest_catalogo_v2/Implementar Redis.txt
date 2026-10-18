@@ -1,0 +1,41 @@
+Implementar Redis en docker
+===========================
+
+docker run -d --name redis -p 6379:6379 --restart unless-stopped redis:alpine
+
+Comandos útiles
+
+Verificar Redis
+docker exec -it redis redis-cli ping
+
+ver logs
+docker logs -f redis
+
+Detener e Reiniciar Redis
+docker stop redis
+docker start redis
+
+
+ver Red/Ip en docker
+docker inspect -f "{{json .NetworkSettings.Networks}}" redis
+
+
+Interfaz Web
+==============
+docker run -d --name redisinsight -p 5540:5540 -v redisinsight:/data redis/redisinsight:latest
+
+http://localhost:5540
+
+
+Levantar catalogo-service
+=============================
+
+docker build -t catalogo-api:java25 .
+
+Ejecutar contenedor:
+docker run -d --name catalogo-api -p 8081:8081 catalogo-api:java25
+
+Version de Java
+docker exec -it catalogo-api java -version
+
+
