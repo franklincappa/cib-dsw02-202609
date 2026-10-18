@@ -30,12 +30,22 @@ http://localhost:5540
 Levantar catalogo-service
 =============================
 
-docker build -t catalogo-api:java25 .
+docker build -t ventastech/catalogo-service:1.0 .
+
+docker run -d --name catalogo-service -p 8081:8081 ventastech/catalogo-service:1.0
 
 Ejecutar contenedor:
-docker run -d --name catalogo-api -p 8081:8081 catalogo-api:java25
+docker run -d --name catalogo-service ^
+  -p 8081:8081 ^
+  -e SPRING_DATA_REDIS_HOST=host.docker.internal ^
+  -e SPRING_DATA_REDIS_PORT=6379 ^
+  -e SPRING_DATASOURCE_URL="<url-jdbc con host.docker.internal>" ^
+  -e SPRING_DATASOURCE_USERNAME=<usuario> ^
+  -e SPRING_DATASOURCE_PASSWORD=<password> ^
+  ventastech/catalogo-service:1.0
 
-Version de Java
-docker exec -it catalogo-api java -version
+
+
+
 
 

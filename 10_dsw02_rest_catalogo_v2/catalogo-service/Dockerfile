@@ -1,5 +1,5 @@
 # ── Etapa 1: Build ──────────────────────────────────────
-FROM maven:3.9.16-eclipse-temurin-25 AS build
+FROM maven:3.9-eclipse-temurin-17 AS build
 WORKDIR /app
 LABEL authors="Franklin Cappa"
 
@@ -14,14 +14,15 @@ COPY src ./src
 RUN mvn clean package -DskipTests -B
 
 # ── Etapa 2: Runtime (imagen liviana) ───────────────────
-FROM eclipse-temurin:25-jre-alpine
+FROM eclipse-temurin:17-jre-alpine
 WORKDIR /app
 
 # Usuario no-root por seguridad
 RUN addgroup -S ventastech && adduser -S catalogo -G ventastech
-COPY --from=build --chown=catalogo:ventastech /app/target/*.jar app.jar
-
 USER catalogo
+
+# Copia solo el jar generado
+COPY --from=build /app/target/*.jar app.jar
 
 EXPOSE 8081
 
